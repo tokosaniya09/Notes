@@ -1,0 +1,20 @@
+import * as Joi from 'joi';
+
+export const envValidationSchema = Joi.object({
+  NODE_ENV: Joi.string()
+    .valid('development', 'production', 'test', 'provision')
+    .default('development'),
+  PORT: Joi.number().default(3000),
+  DATABASE_URL: Joi.string().required().description('PostgreSQL Connection String (Pooled)'),
+  DIRECT_URL: Joi.string().optional().description('PostgreSQL Connection String (Direct - for migrations)'),
+  REDIS_URL: Joi.string().required().description('Redis Connection String'),
+  
+  // Auth Configuration
+  JWT_SECRET: Joi.string().required().min(32).description('Secret for signing JWTs'),
+  JWT_EXPIRATION: Joi.string().default('15m').description('Access token expiration time'),
+  
+  // OAuth Configuration (Optional in dev, required in prod for Google Login)
+  GOOGLE_CLIENT_ID: Joi.string().optional(),
+  GOOGLE_CLIENT_SECRET: Joi.string().optional(),
+  GOOGLE_CALLBACK_URL: Joi.string().optional().default('http://localhost:3000/auth/google/callback'),
+});
