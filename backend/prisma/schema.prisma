@@ -10,6 +10,7 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// Enums
 enum Role {
   USER
   ADMIN
@@ -21,19 +22,55 @@ enum SubscriptionTier {
   TEAM
 }
 
+// Models
+
 model User {
   id          String           @id @default(uuid())
   email       String           @unique
-  password    String?
+  password    String? // Nullable for OAuth users
   firstName   String
   lastName    String?
   avatar      String?
   role        Role             @default(USER)
   tier        SubscriptionTier @default(FREE)
-  preferences Json?
+  preferences Json?            @default("{}") // Stores UI theme, notif settings, etc.
   isActive    Boolean          @default(true)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
+  // Relations
+  notes Note[]
+
   @@map("users")
+}
+
+model Note {
+  id         String   @id @default(uuid())
+  title      String   @default("Untitled")
+  content    Json?    @default("{}") // Rich text content (e.g., TipTap JSON)
+  isArchived Boolean  @default(false)
+  isDeleted  Boolean  @default(false) // Soft delete support
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions NoteVersion[]
+
+  @@index([userId])
+  @@map("notes")
+}
+
+model NoteVersion {
+  id        String   @id @default(uuid())
+  noteId    String
+  content   Json // Snapshot of the content at this point in time
+  createdAt DateTime @default(now())
+
+  // Relations
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@map("note_versions")
 }
