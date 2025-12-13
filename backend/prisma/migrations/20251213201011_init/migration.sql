@@ -26,7 +26,7 @@ CREATE TABLE "users" (
 CREATE TABLE "notes" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL DEFAULT 'Untitled',
-    "content" JSONB DEFAULT '{}',
+    "content" JSONB NOT NULL DEFAULT '{}',
     "isArchived" BOOLEAN NOT NULL DEFAULT false,
     "isDeleted" BOOLEAN NOT NULL DEFAULT false,
     "userId" TEXT NOT NULL,

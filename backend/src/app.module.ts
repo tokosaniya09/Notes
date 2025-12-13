@@ -10,6 +10,8 @@ import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { NotesModule } from './modules/notes/notes.module';
+import { CollaborationModule } from './modules/collaboration/collaboration.module';
+import { AIModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { NotesModule } from './modules/notes/notes.module';
     UsersModule,
     AuthModule,
     NotesModule,
+    CollaborationModule,
+    AIModule,
   ],
 })
 export class AppModule {}
