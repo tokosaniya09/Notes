@@ -13,11 +13,17 @@ export const envValidationSchema = Joi.object({
   JWT_SECRET: Joi.string().required().min(32).description('Secret for signing JWTs'),
   JWT_EXPIRATION: Joi.string().default('15m').description('Access token expiration time'),
   
-  // OAuth Configuration (Optional in dev, required in prod for Google Login)
+  // OAuth Configuration
   GOOGLE_CLIENT_ID: Joi.string().optional(),
   GOOGLE_CLIENT_SECRET: Joi.string().optional(),
   GOOGLE_CALLBACK_URL: Joi.string().optional().default('http://localhost:3000/auth/google/callback'),
 
   // AI Configuration
   API_KEY: Joi.string().required().description('API Key for Gemini/AI Provider'),
+
+  // Billing Configuration
+  STRIPE_SECRET_KEY: Joi.string().required().description('Stripe Secret Key'),
+  STRIPE_WEBHOOK_SECRET: Joi.string().required().description('Stripe Webhook Secret'),
+  STRIPE_PRICE_ID_PRO: Joi.string().required().description('Stripe Price ID for Pro Plan'),
+  STRIPE_PRICE_ID_TEAM: Joi.string().required().description('Stripe Price ID for Team Plan'),
 });

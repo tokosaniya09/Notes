@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
@@ -12,6 +11,7 @@ import { UsersModule } from './modules/users/users.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { CollaborationModule } from './modules/collaboration/collaboration.module';
 import { AIModule } from './modules/ai/ai.module';
+import { BillingModule } from './modules/billing/billing.module';
 
 @Module({
   imports: [
@@ -36,6 +36,7 @@ import { AIModule } from './modules/ai/ai.module';
     NotesModule,
     CollaborationModule,
     AIModule,
+    BillingModule,
   ],
 })
 export class AppModule {}

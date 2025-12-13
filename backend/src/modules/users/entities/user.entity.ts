@@ -9,6 +9,14 @@ export enum SubscriptionTier {
   TEAM = 'TEAM',
 }
 
+export enum SubscriptionStatus {
+  ACTIVE = 'active',
+  CANCELED = 'canceled',
+  PAST_DUE = 'past_due',
+  INCOMPLETE = 'incomplete',
+  TRIALING = 'trialing',
+}
+
 export class User {
   id: string;
   email: string;
@@ -17,9 +25,16 @@ export class User {
   lastName?: string | null;
   avatar?: string | null;
   role: Role;
-  tier: SubscriptionTier;
-  preferences?: any;
   isActive: boolean;
+  
+  // Subscription Fields
+  tier: SubscriptionTier;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  subscriptionStatus?: SubscriptionStatus | null;
+  subscriptionEndsAt?: Date | null;
+
+  preferences?: any;
   createdAt: Date;
   updatedAt: Date;
 

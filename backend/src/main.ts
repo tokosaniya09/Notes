@@ -4,9 +4,13 @@ import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { json } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false, // We will manually apply body parser to handle raw body for webhooks
+  });
 
   // Enable CORS for Frontend communication
   app.enableCors({
@@ -21,6 +25,16 @@ async function bootstrap() {
   // Global Config Access
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT');
+
+  // Custom Raw Body Parser for Stripe Webhooks
+  app.use(json({
+    verify: (req: any, res, buf) => {
+      // Preserve raw body for Stripe signature verification
+      if (req.url.includes('/billing/webhook')) {
+        req.rawBody = buf;
+      }
+    },
+  }));
 
   // Global Validation Pipeline
   app.useGlobalPipes(
