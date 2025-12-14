@@ -1,4 +1,4 @@
-import { getSession } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
@@ -9,6 +9,7 @@ type FetchOptions = RequestInit & {
 /**
  * Wrapper around fetch that automatically adds the Authorization header
  * from the NextAuth session if available.
+ * Handles 401 redirects and JSON parsing safely.
  */
 export async function apiClient<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { token, ...customConfig } = options;
@@ -18,22 +19,18 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
     ...(customConfig.headers || {}),
   };
 
+  // 1. Token Attachment Strategy
   if (token) {
     (headers as any)['Authorization'] = `Bearer ${token}`;
-  } else {
-    // Client-side: try to get session token
-    // Note: getSession() works in Client Components. 
-    // For Server Components, pass the token explicitly.
+  } else if (typeof window !== 'undefined') {
+    // Client-side: Attempt to get session token if not explicitly provided
     try {
       const session = await getSession();
-      // @ts-ignore
       if (session?.accessToken) {
-         // @ts-ignore
         (headers as any)['Authorization'] = `Bearer ${session.accessToken}`;
       }
     } catch (e) {
-      // Ignore session errors if running in contexts where getSession might fail 
-      // or if we simply want to attempt a public request.
+      // Allow request to proceed (might be a public endpoint or session fetch failed)
     }
   }
 
@@ -44,10 +41,25 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
 
   const response = await fetch(`${BASE_URL}${endpoint}`, config);
 
+  // 2. Global Error Handling
+  if (response.status === 401) {
+    if (typeof window !== 'undefined') {
+      // CRITICAL: Use signOut to clear the NextAuth session cookie.
+      // This prevents middleware from redirecting back to dashboard, breaking the infinite loop.
+      signOut({ callbackUrl: '/login' });
+    }
+    throw new Error("Session expired. Please login again.");
+  }
+
   if (!response.ok) {
      const errorData = await response.json().catch(() => ({}));
      const errorMessage = errorData.message || response.statusText || 'Network request failed';
      throw new Error(errorMessage);
+  }
+
+  // 3. Handle 204 No Content (Common for DELETE/PATCH)
+  if (response.status === 204) {
+      return {} as T;
   }
 
   return response.json();

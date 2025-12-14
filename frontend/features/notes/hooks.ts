@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { notesApi } from "./api";
 import { CreateNoteDto, NotesListParams, UpdateNoteDto, Note } from "./types";
@@ -28,11 +27,17 @@ export function useCreateNote() {
     mutationFn: (data: CreateNoteDto) => notesApi.create(data),
     onSuccess: (newNote) => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      toast.success("Note created");
-      router.push(`/dashboard/notes/${newNote.id}`);
+      if (newNote && newNote.id) {
+        toast.success("Note created");
+        router.push(`/dashboard/notes/${newNote.id}`);
+      } else {
+        console.error("Note created but no ID returned", newNote);
+        toast.error("Note created but failed to open");
+      }
     },
-    onError: () => {
-      toast.error("Failed to create note");
+    onError: (error) => {
+      console.error("Create note failed", error);
+      toast.error("Failed to create note. Please try again.");
     },
   });
 }
@@ -54,8 +59,6 @@ export function useUpdateNote(id: string) {
         queryClient.setQueryData<Note>(["note", id], {
           ...previousNote,
           ...newData,
-          // If we are updating content, we might not want to touch updatedAt 
-          // immediately in UI to prevent jumping, but for now we leave it.
         });
       }
 

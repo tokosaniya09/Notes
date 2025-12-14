@@ -11,7 +11,7 @@ export const envValidationSchema = Joi.object({
   
   // Auth Configuration
   JWT_SECRET: Joi.string().required().min(32).description('Secret for signing JWTs'),
-  JWT_EXPIRATION: Joi.string().default('15m').description('Access token expiration time'),
+  JWT_EXPIRATION: Joi.string().default('7d').description('Access token expiration time'),
   
   // OAuth Configuration
   GOOGLE_CLIENT_ID: Joi.string().optional(),

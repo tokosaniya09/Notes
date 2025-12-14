@@ -5,7 +5,7 @@ import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
 import { StripeClient } from '../../src/modules/billing/stripe/stripe.client';
 import { cleanDatabase } from '../utils/test-utils';
-import { SubscriptionTier } from '../../src/modules/billing/types';
+// import { SubscriptionTier } from '../../src/modules/billing/types';
 
 declare const describe: any;
 declare const it: any;

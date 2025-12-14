@@ -2,8 +2,12 @@ import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
 import { ArrowRight, Layout, Zap, Lock } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { UserNav } from "@/components/layout/user-nav";
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth();
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="container z-40 bg-background/50 backdrop-blur-xl border-b border-border sticky top-0">
@@ -14,13 +18,22 @@ export default function Home() {
             </div>
             Notes SaaS
           </div>
-          <nav className="flex gap-4 sm:gap-6">
-            <Link href="/login">
-              <Button variant="ghost">Login</Button>
-            </Link>
-            <Link href="/register">
-              <Button>Get Started</Button>
-            </Link>
+          <nav className="flex gap-4 sm:gap-6 items-center">
+            {session ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{session.user?.name}</span>
+                <UserNav email={session.user?.email} />
+              </div>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost">Login</Button>
+                </Link>
+                <Link href="/register">
+                  <Button>Get Started</Button>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -37,19 +50,21 @@ export default function Home() {
               No clutter. Just you and your ideas.
             </p>
             <div className="mt-8 flex gap-4 justify-center">
-              <Link href="/register">
+              <Link href={session ? "/dashboard" : "/register"}>
                 <Button size="lg">
-                  Get Started <ArrowRight className="ml-2 h-4 w-4" />
+                  {session ? "Go to Dashboard" : "Get Started"} <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg">
-                View Roadmap
-              </Button>
+              <Link href="#features">
+                <Button variant="outline" size="lg">
+                  View Roadmap
+                </Button>
+              </Link>
             </div>
           </FadeIn>
         </div>
 
-        <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-3 lg:text-left gap-8">
+        <div id="features" className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-3 lg:text-left gap-8 scroll-mt-24">
           <FeatureCard 
             icon={<Zap className="h-6 w-6" />}
             title="Instant Sync"

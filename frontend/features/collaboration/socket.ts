@@ -1,5 +1,5 @@
 
-import { io } from 'socket.io-client';
+import io from 'socket.io-client';
 import { getSession } from 'next-auth/react';
 
 class SocketService {
@@ -23,7 +23,6 @@ class SocketService {
     
     try {
         const session = await getSession();
-        // @ts-ignore - session type augmentation
         token = session?.accessToken;
     } catch (e) {
         console.error("Failed to get session for WS connection", e);
@@ -44,6 +43,10 @@ class SocketService {
     this.socket = io(`${backendUrl}/collaboration`, {
       auth: {
         token: `Bearer ${token}`
+      },
+      // Backend checks handshake.headers.authorization
+      extraHeaders: {
+        Authorization: `Bearer ${token}`
       },
       transports: ['websocket'],
       autoConnect: true,

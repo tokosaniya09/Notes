@@ -1,9 +1,8 @@
-
 "use client";
 
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { FileText, Plus } from "lucide-react";
+import { FileText, Plus, Loader2 } from "lucide-react";
 import { useNotes, useCreateNote } from "../hooks";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
@@ -12,6 +11,13 @@ import { cn } from "@/lib/utils";
 export function NotesList() {
   const { data: notes, isLoading } = useNotes();
   const { mutate: createNote, isPending: isCreating } = useCreateNote();
+
+  const handleCreateNote = () => {
+    createNote({
+      title: "Untitled Note",
+      content: { text: "" }
+    });
+  };
 
   if (isLoading) {
     return <NotesSkeleton />;
@@ -29,8 +35,8 @@ export function NotesList() {
             Create your first note to start capturing your ideas in a distraction-free environment.
           </p>
         </div>
-        <Button onClick={() => createNote({})} disabled={isCreating}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button onClick={handleCreateNote} disabled={isCreating}>
+          {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
           Create Note
         </Button>
       </div>
@@ -41,8 +47,8 @@ export function NotesList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Your Notes</h2>
-        <Button onClick={() => createNote({})} disabled={isCreating} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
+        <Button onClick={handleCreateNote} disabled={isCreating} size="sm">
+          {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
           New Note
         </Button>
       </div>

@@ -19,7 +19,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           if (!credentials?.email || !credentials?.password) return null;
 
-          const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'}/auth/login`, {
+          // Note: Use internal docker URL if available, else fallback to public/localhost
+          const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+          
+          const res = await fetch(`${baseUrl}/auth/login`, {
             method: 'POST',
             body: JSON.stringify({
               email: credentials.email,
@@ -51,18 +54,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, account, user }) {
+    async jwt({ token, user }) {
       if (user) {
-        token.id = (user as any).id
-        // @ts-ignore
-        token.accessToken = (user as any).accessToken
+        token.id = user.id
+        token.accessToken = user.accessToken
       }
       return token
     },
     async session({ session, token }) {
       if (token && session.user) {
-        (session.user as any).id = token.id as string
-        // @ts-ignore
+        session.user.id = token.id
         session.accessToken = token.accessToken
       }
       return session

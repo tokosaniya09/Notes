@@ -9,7 +9,7 @@ interface NotePageProps {
 
 export default function NotePage({ params }: NotePageProps) {
   return (
-    <div className="h-full px-4 md:px-8 py-6">
+    <div className="h-full">
       <Editor noteId={params.id} />
     </div>
   );

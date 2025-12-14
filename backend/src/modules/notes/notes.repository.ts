@@ -1,14 +1,12 @@
-
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { Note } from './entities/note.entity';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class NotesRepository {
   constructor(private prisma: PrismaService) {}
 
-  async create(userId: string, data: Prisma.NoteCreateInput): Promise<Note> {
+  async create(userId: string, data: any): Promise<Note> {
     const note = await (this.prisma as any).note.create({
       data: {
         ...data,
@@ -23,8 +21,8 @@ export class NotesRepository {
     params: {
       skip?: number;
       take?: number;
-      where?: Prisma.NoteWhereInput;
-      orderBy?: Prisma.NoteOrderByWithRelationInput;
+      where?: any;
+      orderBy?: any;
     },
   ): Promise<Note[]> {
     const notes = await (this.prisma as any).note.findMany({
@@ -51,7 +49,7 @@ export class NotesRepository {
     return note ? new Note(note) : null;
   }
 
-  async update(userId: string, id: string, data: Prisma.NoteUpdateInput): Promise<Note> {
+  async update(userId: string, id: string, data: any): Promise<Note> {
     // We implicitly verify ownership by adding userId to the where clause
     // However, Prisma update many/first syntax is different.
     // For safety, we rely on the service to check existence or use updateMany for bulk safety,

@@ -5,7 +5,7 @@ import { useNote, useUpdateNote, useDeleteNote } from "../hooks";
 import { useEditorStore } from "../store";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
-import { Trash, ChevronLeft, CheckCloud } from "lucide-react";
+import { Trash, ChevronLeft, Cloud, Check } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/motion/fade-in";
@@ -106,17 +106,17 @@ export function Editor({ noteId }: EditorProps) {
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
       {/* Main Content Area */}
       <FadeIn className="flex-1 flex flex-col h-full relative overflow-y-auto">
-        <div className="max-w-3xl mx-auto w-full px-8 py-6">
+        <div className="w-full">
           
           {/* Header Actions */}
-          <div className="flex items-center justify-between mb-8 py-2">
+          <div className="flex w-full items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronLeft className="h-5 w-5" />
               </Link>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">
-                    {isSaving ? "Saving..." : <span className="flex items-center gap-1"><CheckCloud className="h-3 w-3" /> Saved</span>}
+                    {isSaving ? "Saving..." : <span className="flex items-center gap-1"><Cloud className="h-3 w-3" /> <Check className="h-2 w-2" /> Saved</span>}
                 </span>
                 <div className="h-4 w-[1px] bg-border mx-1" />
                 <PresenceAvatars />

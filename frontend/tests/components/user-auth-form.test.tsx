@@ -8,6 +8,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { UserAuthForm } from '@/components/auth/user-auth-form';
 import { signIn } from 'next-auth/react';
+import { toast } from 'sonner';
 
 // --- Mocks ---
 jest.mock('next-auth/react', () => ({
@@ -27,7 +28,7 @@ jest.mock('sonner', () => ({
 }));
 
 describe('UserAuthForm', () => {
-  const mockSignIn = signIn as jest.Mock;
+  const mockSignIn = signIn as any;
 
   beforeEach(() => {
     mockSignIn.mockClear();
@@ -47,7 +48,6 @@ describe('UserAuthForm', () => {
 
     // HTML5 validation or sonner toast checking
     // Since the component uses toast.error for validation:
-    const { toast } = require('sonner');
     expect(toast.error).toHaveBeenCalledWith('Please fill in all fields');
   });
 
