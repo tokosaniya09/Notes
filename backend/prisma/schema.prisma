@@ -1,12 +1,16 @@
+// backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
+// --- ENUMS ---
 
 enum Role {
   USER
@@ -19,51 +23,59 @@ enum SubscriptionTier {
   TEAM
 }
 
-model User {
-  id          String           @id @default(uuid())
-  email       String           @unique
-  password    String?          // Nullable for OAuth users
-  firstName   String
-  lastName    String?
-  avatar      String?
-  role        Role             @default(USER)
-  tier        SubscriptionTier @default(FREE)
-  preferences Json?            @default("{}")
-  isActive    Boolean          @default(true)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+enum SubscriptionStatus {
+  active
+  canceled
+  past_due
+  incomplete
+  trialing
+}
 
-  notes       Note[]
+// --- MODELS ---
+
+model User {
+  id        String  @id @default(uuid())
+  email     String  @unique
+  password  String? // Nullable for OAuth users
+  firstName String
+  lastName  String?
+  avatar    String?
+  role      Role    @default(USER)
+  isActive  Boolean @default(true)
+
+  // Subscription Fields
+  tier                 SubscriptionTier    @default(FREE)
+  stripeCustomerId     String?             @unique
+  stripeSubscriptionId String?             @unique
+  subscriptionStatus   SubscriptionStatus?
+  subscriptionEndsAt   DateTime?
+
+  // JSON preferences (theme, notifications, etc.)
+  preferences Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  notes Note[]
 
   @@map("users")
 }
 
 model Note {
-  id         String   @id @default(uuid())
-  title      String   @default("Untitled")
-  content    Json     @default("{}")
-  isArchived Boolean  @default(false)
-  isDeleted  Boolean  @default(false)
-  isShared   Boolean  @default(false) // ✅ ADD THIS
-  userId     String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id      String @id @default(uuid())
+  title   String
+  content Json   @default("{}") // Stores the editor content as JSON
 
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  versions NoteVersion[]
+  isArchived Boolean @default(false)
+  isDeleted  Boolean @default(false)
+  isShared   Boolean @default(false) // <--- This was the missing field causing the error
 
-  @@index([userId])
-  @@map("notes")
-}
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-model NoteVersion {
-  id        String   @id @default(uuid())
-  noteId    String
-  content   Json
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
-
-  @@index([noteId])
-  @@map("note_versions")
+  @@map("notes")
 }
