@@ -3,12 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea"; // Assuming generic textarea exists or standard
 import { Icons } from "@/components/icons";
 import { AIStream } from "./ai-stream";
 import { useAIStream, useRewrite, useSummarize } from "../hooks";
 import { X, Sparkles, Copy, RefreshCw, Send, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export type AIMode = "idle" | "summarize" | "rewrite" | "chat";
@@ -82,7 +80,7 @@ export function AIPanel({ isOpen, onClose, mode, setMode, contextContent }: AIPa
   if (!isOpen) return null;
 
   return (
-    <div className="flex flex-col h-full border-l bg-muted/30 w-[400px] shadow-xl transition-all duration-300">
+    <div className="flex flex-col h-[90%] border-l bg-muted/30 w-[400px] shadow-xl transition-all duration-300">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-background/50 backdrop-blur">
         <div className="flex items-center gap-2 font-medium text-sm">

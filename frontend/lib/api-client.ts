@@ -1,6 +1,6 @@
 import { getSession, signOut } from "next-auth/react";
 
-const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 type FetchOptions = RequestInit & {
   token?: string;

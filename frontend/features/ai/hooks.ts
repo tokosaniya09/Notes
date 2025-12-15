@@ -44,7 +44,7 @@ export function useAIStream() {
       const token = session?.accessToken;
 
       // Direct fetch to handle stream
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'}/ai/stream/ask`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/ai/stream/ask`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -33,7 +33,7 @@ class SocketService {
       return null;
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
     // Disconnect existing socket if it exists but is in a bad state
     if (this.socket) {

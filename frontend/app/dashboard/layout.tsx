@@ -27,8 +27,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           </div>
         </div>
       </header>
-      <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr]">
-        <aside className="hidden w-[200px] flex-col md:flex">
+      <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr] ">
+        <aside className="hidden w-[200px] flex-col md:flex border-r border-black-2 p-4">
           <nav className="grid items-start gap-2">
             <Link 
               href="/dashboard"

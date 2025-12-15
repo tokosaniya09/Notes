@@ -61,7 +61,7 @@ export function UserAuthForm({ className, mode = "login", ...props }: UserAuthFo
         }
 
         // Call Backend Register Endpoint directly
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'}/auth/register`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password, firstName, lastName })
@@ -131,7 +131,7 @@ export function UserAuthForm({ className, mode = "login", ...props }: UserAuthFo
           {mode === "register" && (
              <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                    <Label htmlFor="firstName">First Name</Label>
+                    <Label htmlFor="firstName">First Name*</Label>
                     <Input id="firstName" name="firstName" placeholder="John" required disabled={isLoading} />
                 </div>
                 <div className="grid gap-2">
@@ -142,7 +142,7 @@ export function UserAuthForm({ className, mode = "login", ...props }: UserAuthFo
           )}
 
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Email*</Label>
             <Input
               id="email"
               name="email" 
@@ -157,7 +157,7 @@ export function UserAuthForm({ className, mode = "login", ...props }: UserAuthFo
           </div>
 
           <div className="grid gap-2">
-             <Label htmlFor="password">Password</Label>
+             <Label htmlFor="password">Password*</Label>
              <div className="relative">
                 <Input
                     id="password"

@@ -8,7 +8,6 @@ import { CurrentUser } from './auth.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // 1. Standard Email/Password Auth
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterDto) {
@@ -21,23 +20,15 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  // 2. Google OAuth Endpoints
-  @Get('google')
-  @UseGuards(AuthGuard('google'))
-  async googleAuth(@Req() req) {
-    // Guard redirects to Google
-  }
-
-  @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
-  async googleAuthRedirect(@CurrentUser() user) {
-    return this.authService.generateToken(user);
-  }
-
-  // 3. Token Verification
   @Get('me')
-  @UseGuards(AuthGuard('jwt')) 
+  @UseGuards(AuthGuard('jwt'))
   async getProfile(@CurrentUser() user) {
     return user;
+  }
+
+  @Post('google-sync')
+  @HttpCode(HttpStatus.OK)
+  async googleSync(@Body() body: { email: string; name?: string }) {
+    return this.authService.googleSync(body);
   }
 }

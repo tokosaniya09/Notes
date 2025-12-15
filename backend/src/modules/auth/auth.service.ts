@@ -155,4 +155,20 @@ export class AuthService {
   async sendMagicLink(email: string) {
      return { message: 'Feature temporarily disabled for security upgrades.' };
   }
+
+  async googleSync({ email, name }: { email: string; name?: string }) {
+    let user = await this.usersService.findByEmail(email);
+
+    if (!user) {
+      user = await this.usersService.create({
+        email,
+        firstName: name || 'Google',
+        lastName: '',
+        password: null, // IMPORTANT: no password for Google users
+        tier: SubscriptionTier.FREE,
+      });
+    }
+
+    return this.generateToken(user);
+  }
 }

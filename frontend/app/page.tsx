@@ -39,7 +39,7 @@ export default async function Home() {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center p-6 md:p-24 text-center">
-        <div className="relative flex place-items-center my-16">
+        <div className="relative flex place-items-center">
           <FadeIn>
             <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-7xl">
               Think clearer. <br />
@@ -64,7 +64,7 @@ export default async function Home() {
           </FadeIn>
         </div>
 
-        <div id="features" className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-3 lg:text-left gap-8 scroll-mt-24">
+        <div id="features" className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-3 lg:text-left gap-8 scroll-mt-24 pt-4">
           <FeatureCard 
             icon={<Zap className="h-6 w-6" />}
             title="Instant Sync"

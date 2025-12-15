@@ -9,6 +9,7 @@ import { Trash, ChevronLeft, Cloud, Check } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/motion/fade-in";
+import { ConfirmDialog } from "../components/confirm-dialog";
 
 // Collaboration Imports
 import { useCollaboration, useCursorBroadcaster } from "@/features/collaboration/hooks";
@@ -38,6 +39,7 @@ export function Editor({ noteId }: EditorProps) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // AI State
   const [isAIOpen, setIsAIOpen] = useState(false);
@@ -79,7 +81,7 @@ export function Editor({ noteId }: EditorProps) {
           }
         }
       );
-    }, 2000); // 2 second debounce
+    }, 5000); // 5 second debounce
   };
 
   const handleSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
@@ -90,6 +92,10 @@ export function Editor({ noteId }: EditorProps) {
   const handleAIAction = (mode: AIMode) => {
     setAIMode(mode);
     setIsAIOpen(true);
+  };
+
+  const handleDelete = () => {
+    deleteNote(noteId);
   };
 
   if (isLoading) {
@@ -103,13 +109,13 @@ export function Editor({ noteId }: EditorProps) {
   if (!note) return <div>Note not found</div>;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex h-[calc(100vh-4rem)]">
       {/* Main Content Area */}
-      <FadeIn className="flex-1 flex flex-col h-full relative overflow-y-auto">
-        <div className="w-full">
+      <FadeIn className="flex-1 flex flex-col h-full relative border border-black/10 rounded-lg shadow-sm bg-card">
+        <div className="w-full px-8 md:px-12 py-6 mx-auto">
           
           {/* Header Actions */}
-          <div className="flex w-full items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-8 py-2">
             <div className="flex items-center gap-4">
               <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronLeft className="h-5 w-5" />
@@ -129,11 +135,7 @@ export function Editor({ noteId }: EditorProps) {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => {
-                  if (confirm("Are you sure you want to delete this note?")) {
-                    deleteNote(noteId);
-                  }
-                }}
+                onClick={() => setShowDeleteDialog(true)}
                 className="text-muted-foreground hover:text-destructive transition-colors"
                 disabled={isDeleting}
               >
@@ -186,6 +188,18 @@ export function Editor({ noteId }: EditorProps) {
            contextContent={content}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog 
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleDelete}
+        title="Delete Note"
+        description="Are you sure you want to delete this note? This action cannot be undone."
+        variant="destructive"
+        actionLabel="Delete"
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

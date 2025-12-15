@@ -14,16 +14,16 @@ import { LogOut, Settings, User } from "lucide-react";
 
 // 10 Distinct Notion-style Avatars
 const AVATARS = [
-  "https://api.dicebear.com/7.x/notionists/svg?seed=Felix",
-  "https://api.dicebear.com/7.x/notionists/svg?seed=Aneka",
-  "https://api.dicebear.com/7.x/notionists/svg?seed=Milo",
-  "https://api.dicebear.com/7.x/notionists/svg?seed=Bella",
-  "https://api.dicebear.com/7.x/notionists/svg?seed=Lilly",
-  "https://api.dicebear.com/7.x/notionists/svg?seed=Leo",
-  "https://api.dicebear.com/7.x/notionists/svg?seed=Sam",
-  "https://api.dicebear.com/7.x/notionists/svg?seed=Zoe",
-  "https://api.dicebear.com/7.x/notionists/svg?seed=Max",
-  "https://api.dicebear.com/7.x/notionists/svg?seed=Chloe"
+  "https://api.dicebear.com/7.x/thumbs/svg?seed=owl&backgroundColor=000000&shapeColor=ffffff",
+  "https://api.dicebear.com/7.x/thumbs/svg?seed=fox&backgroundColor=000000&shapeColor=ffffff",
+  "https://api.dicebear.com/7.x/thumbs/svg?seed=panda&backgroundColor=000000&shapeColor=ffffff",
+  "https://api.dicebear.com/7.x/thumbs/svg?seed=cat&backgroundColor=000000&shapeColor=ffffff",
+  "https://api.dicebear.com/7.x/thumbs/svg?seed=dog&backgroundColor=000000&shapeColor=ffffff",
+  "https://api.dicebear.com/7.x/thumbs/svg?seed=bear&backgroundColor=000000&shapeColor=ffffff",
+  "https://api.dicebear.com/7.x/thumbs/svg?seed=koala&backgroundColor=000000&shapeColor=ffffff",
+  "https://api.dicebear.com/7.x/thumbs/svg?seed=lion&backgroundColor=000000&shapeColor=ffffff",
+  "https://api.dicebear.com/7.x/thumbs/svg?seed=monkey&backgroundColor=000000&shapeColor=ffffff",
+  "https://api.dicebear.com/7.x/thumbs/svg?seed=penguin&backgroundColor=000000&shapeColor=ffffff"
 ];
 
 interface UserNavProps {
