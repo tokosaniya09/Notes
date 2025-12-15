@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 const getAvatarUrl = (seed: string) => `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}`;
 
 export function PresenceAvatars() {
-  const { users, cursors } = useCollaborationStore();
+  const { users, cursors, selfId } = useCollaborationStore();
   const { data: currentUser } = useCurrentUser();
   const [now, setNow] = useState(Date.now());
 
@@ -21,7 +21,7 @@ export function PresenceAvatars() {
   }, []);
 
   // Filter self out
-  const otherUsers = users.filter(u => u.userId !== currentUser?.id);
+  const otherUsers = users.filter(u => u.userId !== selfId);
 
   if (otherUsers.length === 0) return null;
 

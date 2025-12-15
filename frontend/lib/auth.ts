@@ -75,28 +75,46 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!res.ok) return false;
 
         const data = await res.json();
-
         user.id = data.user.id;
         user.accessToken = data.accessToken;
       }
+
       return true;
     },
 
     async jwt({ token, user }) {
+      // First login
       if (user) {
         token.id = user.id!;
         token.accessToken = user.accessToken;
+        return token;
       }
+
+      // 🔒 SAFETY CHECK — token exists, verify user still exists
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`,
+        {
+          headers: {
+            Authorization: `Bearer ${token.accessToken}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        return null; // ✅ VALID here → forces logout
+      }
+
       return token;
     },
 
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id;
-        session.accessToken = token.accessToken;
-      }
-      return session;
+      // token is guaranteed to be valid here
+      session.user.id = token.id as string;
+      session.accessToken = token.accessToken as string;
+
+      return session; // ✅ always return session
     },
   }
+
 
 })

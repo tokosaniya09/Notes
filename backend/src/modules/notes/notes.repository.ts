@@ -1,9 +1,12 @@
-import { Injectable } from '@nestjs/common';
+
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { Note } from './entities/note.entity';
 
 @Injectable()
 export class NotesRepository {
+  private readonly logger = new Logger(NotesRepository.name);
+
   constructor(private prisma: PrismaService) {}
 
   async create(userId: string, data: any): Promise<Note> {
@@ -29,8 +32,11 @@ export class NotesRepository {
     const notes = await (this.prisma as any).note.findMany({
       where: {
         ...params.where,
-        userId,
         isDeleted: false,
+        OR: [
+          { userId }, // My notes
+          { shares: { some: { userId } } }, // Notes shared with me specifically
+        ]
       },
       skip: params.skip,
       take: params.take,
@@ -39,28 +45,66 @@ export class NotesRepository {
     return notes.map((n) => new Note(n));
   }
 
+  // Returns Note + Permission Context
+  async findOneWithPermissions(userId: string, id: string): Promise<any | null> {
+    try {
+        // 1. Fetch note by ID (if not deleted)
+        // We include specific shares for this user to check permissions later
+        const note = await (this.prisma as any).note.findFirst({
+            where: {
+                id,
+                isDeleted: false,
+            },
+            include: {
+                shares: {
+                    where: { userId },
+                    select: { permission: true }
+                },
+                user: { // Include owner info
+                    select: { id: true, email: true, firstName: true, lastName: true, avatar: true }
+                }
+            }
+        });
+
+        if (!note) return null;
+
+        // 2. Determine Permissions in Application Logic (More Robust)
+        let permission: string | null = null;
+
+        if (note.userId === userId) {
+            permission = 'OWNER';
+        } else if (note.shares && note.shares.length > 0) {
+            // User has explicit shared access
+            permission = note.shares[0].permission;
+        } else if (note.isShared) {
+            // Note is public
+            permission = 'VIEW';
+        }
+
+        // 3. If no permission matches, return null (Access Denied)
+        if (!permission) {
+            return null;
+        }
+
+        // 4. Map to entity and attach metadata
+        const mappedNote = new Note(note);
+        (mappedNote as any).permission = permission;
+        (mappedNote as any).owner = note.user;
+        
+        return mappedNote;
+
+    } catch (error) {
+        this.logger.error(`Error in findOneWithPermissions for note ${id}: ${error.message}`, error.stack);
+        throw error;
+    }
+  }
+
+  // Kept for backward compatibility, but redirects to above logic internally if needed
   async findOne(userId: string, id: string): Promise<Note | null> {
-    const note = await (this.prisma as any).note.findFirst({
-      where: {
-        id,
-        isDeleted: false,
-        OR: [
-          { userId },
-          { isShared: true } // Allow access if note is shared
-        ]
-      },
-    });
-    return note ? new Note(note) : null;
+    return this.findOneWithPermissions(userId, id);
   }
 
   async update(userId: string, id: string, data: any): Promise<Note> {
-    // We assume permission check (findOne) is done by Service before calling update,
-    // or we implicitly trust the operation if the ID matches.
-    // However, for extra safety in a direct call, we should ensure the note exists and is accessible.
-    // But since `update` throws if not found in Prisma when using `update` with `where: id`, 
-    // it will just work if the ID is valid. 
-    // The Service layer handles the logic of "Can this user edit this note?".
-    
     const note = await (this.prisma as any).note.update({
       where: { id },
       data,
@@ -69,7 +113,7 @@ export class NotesRepository {
   }
 
   async softDelete(userId: string, id: string): Promise<Note> {
-    // Only owner should delete. We enforce userId here.
+    // Only owner should delete.
     const note = await (this.prisma as any).note.findFirst({
         where: { id, userId }
     });
@@ -81,6 +125,53 @@ export class NotesRepository {
     return (this.prisma as any).note.update({
       where: { id },
       data: { isDeleted: true },
+    });
+  }
+
+  // --- SHARE MANAGEMENT ---
+
+  async shareWithUser(noteId: string, email: string, permission: 'VIEW' | 'EDIT'): Promise<void> {
+    const userToShare = await (this.prisma as any).user.findUnique({
+        where: { email }
+    });
+
+    if (!userToShare) {
+        throw new Error('User not found');
+    }
+
+    await (this.prisma as any).sharedNote.upsert({
+        where: {
+            noteId_userId: {
+                noteId,
+                userId: userToShare.id
+            }
+        },
+        update: { permission },
+        create: {
+            noteId,
+            userId: userToShare.id,
+            permission
+        }
+    });
+  }
+
+  async revokeShare(noteId: string, userId: string): Promise<void> {
+    await (this.prisma as any).sharedNote.deleteMany({
+        where: {
+            noteId,
+            userId
+        }
+    });
+  }
+
+  async getCollaborators(noteId: string) {
+    return (this.prisma as any).sharedNote.findMany({
+        where: { noteId },
+        include: {
+            user: {
+                select: { id: true, email: true, firstName: true, lastName: true, avatar: true }
+            }
+        }
     });
   }
 }

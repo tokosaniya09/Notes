@@ -1,16 +1,11 @@
-// backend/prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
-
-// --- ENUMS ---
 
 enum Role {
   USER
@@ -23,6 +18,11 @@ enum SubscriptionTier {
   TEAM
 }
 
+enum Permission {
+  VIEW
+  EDIT
+}
+
 enum SubscriptionStatus {
   active
   canceled
@@ -31,51 +31,62 @@ enum SubscriptionStatus {
   trialing
 }
 
-// --- MODELS ---
-
 model User {
-  id        String  @id @default(uuid())
-  email     String  @unique
-  password  String? // Nullable for OAuth users
-  firstName String
-  lastName  String?
-  avatar    String?
-  role      Role    @default(USER)
-  isActive  Boolean @default(true)
-
-  // Subscription Fields
-  tier                 SubscriptionTier    @default(FREE)
-  stripeCustomerId     String?             @unique
-  stripeSubscriptionId String?             @unique
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String?   // Nullable for OAuth users
+  firstName     String
+  lastName      String?
+  avatar        String?
+  role          Role      @default(USER)
+  isActive      Boolean   @default(true)
+  
+  // Billing / Stripe
+  tier                 SubscriptionTier @default(FREE)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
   subscriptionStatus   SubscriptionStatus?
+
   subscriptionEndsAt   DateTime?
 
-  // JSON preferences (theme, notifications, etc.)
-  preferences Json?
+  preferences   Json?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relations
-  notes Note[]
-
-  @@map("users")
+  notes         Note[]
+  sharedNotes   SharedNote[]
 }
 
 model Note {
-  id      String @id @default(uuid())
-  title   String
-  content Json   @default("{}") // Stores the editor content as JSON
+  id          String   @id @default(uuid())
+  title       String
+  content     Json     @default("{}") 
+  isArchived  Boolean  @default(false)
+  isDeleted   Boolean  @default(false) // Soft delete
+  
+  // Public Access
+  isShared    Boolean  @default(false) 
 
-  isArchived Boolean @default(false)
-  isDeleted  Boolean @default(false)
-  isShared   Boolean @default(false) // <--- This was the missing field causing the error
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // Explicit Collaborators
+  shares      SharedNote[]
+  @@index([userId])
+}
 
-  @@map("notes")
+model SharedNote {
+  noteId     String
+  userId     String
+  permission Permission @default(VIEW)
+
+  note       Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, userId]) // Composite Primary Key
 }

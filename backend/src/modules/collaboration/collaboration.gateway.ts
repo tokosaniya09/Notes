@@ -9,7 +9,7 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CollaborationService } from './collaboration.service';
@@ -18,6 +18,8 @@ import { JoinNoteDto } from './dto/join-note.dto';
 import { CursorUpdateDto } from './dto/cursor-update.dto';
 import { PresenceDto } from './dto/presence.dto';
 import { NotesService } from '../notes/notes.service';
+import { UsersService } from '../users/users.service';
+import { RemoteCursorPayload } from './dto/remote-cursor-payload.dto';
 
 // Extend Socket to include authenticated user using intersection type
 type AuthenticatedSocket = Socket & {
@@ -50,6 +52,7 @@ export class CollaborationGateway
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly notesService: NotesService,
+    private readonly usersService: UsersService,
   ) {
     // Subscribe to Redis events from the service and broadcast to local clients
     this.collaborationService.messages$.subscribe((msg) => {
@@ -79,13 +82,17 @@ export class CollaborationGateway
       const secret = this.configService.get<string>('JWT_SECRET');
       const payload = this.jwtService.verify(token, { secret });
       
+      // CRITICAL FIX: Fetch full user details from DB to ensure firstName is present
+      // The payload might only contain partial info depending on the JWT strategy
+      const dbUser = await this.usersService.findById(payload.sub);
+
       client.user = {
-        id: payload.sub,
-        email: payload.email,
-        firstName: payload.firstName || 'User',
+        id: dbUser.id,
+        email: dbUser.email,
+        firstName: dbUser.firstName || 'User',
       };
       
-      this.logger.log(`Client connected: ${client.user.id} (${client.id})`);
+      this.logger.log(`Client connected: ${client.user.firstName} (${client.id})`);
     } catch (e) {
       this.logger.warn(`Connection rejected for ${client.id}: ${e.message}`);
       client.disconnect();
@@ -153,15 +160,18 @@ export class CollaborationGateway
   ) {
     if (!client.user) return;
 
-    const safePayload: CursorUpdateDto = {
-        ...dto,
-        userName: client.user.firstName, 
+    // Use server-validated name
+    const safePayload: RemoteCursorPayload = {
+      noteId: dto.noteId,
+      cursorPosition: dto.cursorPosition,
+      userId: client.user.id,           
+      userName: client.user.firstName,  
+      color: dto.color ?? '#3b82f6',
     };
 
     await this.collaborationService.broadcastCursor(safePayload);
   }
 
-  // NEW: Handle Text Synchronization
   @SubscribeMessage(COLLAB_EVENTS.CLIENT_TEXT_UPDATE)
   async handleTextUpdate(
     @ConnectedSocket() client: AuthenticatedSocket,
@@ -169,7 +179,6 @@ export class CollaborationGateway
   ) {
     if (!client.user) return;
 
-    // Broadcast to everyone else in the room
     client.to(payload.noteId).emit(COLLAB_EVENTS.REMOTE_TEXT_UPDATE, {
       userId: client.user.id,
       content: payload.content,
@@ -178,16 +187,13 @@ export class CollaborationGateway
   }
 
   private extractToken(client: Socket): string | undefined {
-    // Check auth object first (standard socket.io v4)
     if (client.handshake.auth && client.handshake.auth.token) {
         return client.handshake.auth.token.replace('Bearer ', '');
     }
-    // Check query params
     const queryToken = client.handshake.query.token;
     if (typeof queryToken === 'string') {
         return queryToken.replace('Bearer ', '');
     }
-    // Check headers
     const authHeader = client.handshake.headers.authorization;
     if (authHeader && authHeader.split(' ')[0] === 'Bearer') {
       return authHeader.split(' ')[1];

@@ -53,4 +53,34 @@ export class NotesController {
   remove(@CurrentUser() user: any, @Param('id') id: string) {
     return this.notesService.remove(user.id, id);
   }
+
+  // --- COLLABORATION ENDPOINTS ---
+
+  @Post(':id/share')
+  async shareNote(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() body: { email: string; permission: 'VIEW' | 'EDIT' }
+  ) {
+    await this.notesService.shareNote(user.id, id, body.email, body.permission);
+    return { success: true };
+  }
+
+  @Delete(':id/share/:userId')
+  async revokeShare(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string
+  ) {
+    await this.notesService.revokeAccess(user.id, id, targetUserId);
+    return { success: true };
+  }
+
+  @Get(':id/collaborators')
+  async getCollaborators(
+    @CurrentUser() user: any,
+    @Param('id') id: string
+  ) {
+    return this.notesService.getCollaborators(user.id, id);
+  }
 }

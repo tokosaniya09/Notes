@@ -3,9 +3,9 @@ import { Injectable, OnModuleDestroy, OnModuleInit, Logger } from '@nestjs/commo
 import { RedisService } from '../../redis/redis.service';
 import { COLLAB_EVENTS } from './events/collaboration.events';
 import { PresenceDto } from './dto/presence.dto';
-import { CursorUpdateDto } from './dto/cursor-update.dto';
 import { Subject } from 'rxjs';
 import Redis from 'ioredis';
+import { RemoteCursorPayload } from './dto/remote-cursor-payload.dto';
 
 export interface CollaborationMessage {
   type: 'USER_JOINED' | 'USER_LEFT' | 'CURSOR_UPDATE';
@@ -138,9 +138,12 @@ export class CollaborationService implements OnModuleInit, OnModuleDestroy {
     return users;
   }
 
-  async broadcastCursor(dto: CursorUpdateDto) {
-    // Cursors are ephemeral and high frequency. We do not persist them.
-    // We just blast them via Pub/Sub to all instances.
-    await this.publishEvent('CURSOR_UPDATE', dto.noteId, dto);
+  async broadcastCursor(payload: RemoteCursorPayload) {
+    await this.publishEvent(
+      'CURSOR_UPDATE',
+      payload.noteId,
+      payload
+    );
   }
+
 }

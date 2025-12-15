@@ -16,6 +16,12 @@ export function useCollaboration(
   const { data: user } = useCurrentUser();
 
   useEffect(() => {
+    if (user?.id) {
+      store.setSelfId(user.id);
+    }
+  }, [user]);
+  
+  useEffect(() => {
     let mounted = true;
 
     const initSocket = async () => {
@@ -41,6 +47,7 @@ export function useCollaboration(
         });
 
         socket.on(COLLAB_EVENTS.REMOTE_CURSOR, (cursor: RemoteCursor) => {
+            console.log("REMOTE_CURSOR PAYLOAD:", cursor);
             store.updateCursor(cursor);
         });
 

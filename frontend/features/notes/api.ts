@@ -1,6 +1,6 @@
 
 import { apiClient } from "@/lib/api-client";
-import { CreateNoteDto, Note, NotesListParams, UpdateNoteDto } from "./types";
+import { Collaborator, CreateNoteDto, Note, NotesListParams, UpdateNoteDto } from "./types";
 
 const BASE_URL = "/notes";
 
@@ -33,4 +33,19 @@ export const notesApi = {
     apiClient<void>(`${BASE_URL}/${id}`, {
       method: "DELETE",
     }),
+
+  // Collaboration
+  share: (id: string, email: string, permission: 'VIEW' | 'EDIT') =>
+    apiClient<void>(`${BASE_URL}/${id}/share`, {
+        method: "POST",
+        body: JSON.stringify({ email, permission })
+    }),
+
+  revoke: (id: string, userId: string) => 
+    apiClient<void>(`${BASE_URL}/${id}/share/${userId}`, {
+        method: "DELETE"
+    }),
+
+  getCollaborators: (id: string) => 
+    apiClient<Collaborator[]>(`${BASE_URL}/${id}/collaborators`),
 };

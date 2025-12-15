@@ -6,7 +6,7 @@ import { useNote, useUpdateNote, useDeleteNote } from "../hooks";
 import { useEditorStore } from "../store";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
-import { Trash, ChevronLeft, Cloud, Check, Share2 } from "lucide-react";
+import { Trash, ChevronLeft, Cloud, Check, Share2, Eye } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/motion/fade-in";
@@ -21,12 +21,14 @@ import { CursorOverlay } from "@/features/collaboration/components/cursor-overla
 // AI Imports
 import { AIToolbar } from "@/components/editor/ai-toolbar";
 import { AIPanel, AIMode } from "@/features/ai/components/ai-panel";
+import { useSession } from "next-auth/react";
 
 interface EditorProps {
   noteId: string;
 }
 
 export function Editor({ noteId }: EditorProps) {
+  const { data: session } = useSession();
   const { data: note, isLoading } = useNote(noteId);
   const { mutate: updateNote, isPending: isUpdating } = useUpdateNote(noteId);
   const { mutate: deleteNote, isPending: isDeleting } = useDeleteNote();
@@ -49,25 +51,20 @@ export function Editor({ noteId }: EditorProps) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Permission Logic
+  const canEdit = note?.permission === 'OWNER' || note?.permission === 'EDIT';
+  const isOwner = note?.permission === 'OWNER';
+
   // --- Real-time Collaboration Logic ---
-  
-  // Handle incoming text from other users
   const handleRemoteTextUpdate = useCallback((newContent: string) => {
-    // Prevent overwrite if we are actively typing? 
-    // For MVP, we allow last-write-wins but update state to show it.
-    // We set a flag to prevent echoing this update back to the server
     setIsRemoteUpdate(true);
     setContent(newContent);
     setTimeout(() => setIsRemoteUpdate(false), 100);
   }, []);
 
-  // Connect to socket
   useCollaboration(noteId, handleRemoteTextUpdate);
-  
-  // Get broadcaster functions
   const { broadcastCursor, broadcastText } = useRealtimeBroadcaster(noteId);
 
-  // Initialize state when data loads (REST API)
   useEffect(() => {
     if (note && !isInitialized) {
       setTitle(note.title);
@@ -76,17 +73,16 @@ export function Editor({ noteId }: EditorProps) {
     }
   }, [note, isInitialized]);
 
-  // Handle Local Changes (Typing)
   const handleChange = (newTitle: string, newContent: string) => {
+    if (!canEdit) return;
+
     setTitle(newTitle);
     setContent(newContent);
 
-    // 1. Broadcast to Socket (Real-time)
     if (!isRemoteUpdate) {
        broadcastText(newContent);
     }
     
-    // 2. Save to DB (Debounced)
     setSaving(true);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -105,7 +101,7 @@ export function Editor({ noteId }: EditorProps) {
           }
         }
       );
-    }, 2000); // 2 second debounce
+    }, 2000); 
   };
 
   const handleSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
@@ -122,7 +118,8 @@ export function Editor({ noteId }: EditorProps) {
     deleteNote(noteId);
   };
 
-  const handleToggleShare = (shared: boolean) => {
+  // Only updates the Public Link status
+  const handleTogglePublicShare = (shared: boolean) => {
     updateNote({ isShared: shared });
   };
 
@@ -134,11 +131,10 @@ export function Editor({ noteId }: EditorProps) {
     );
   }
 
-  if (!note) return <div>Note not found or access denied.</div>;
+  if (!note) return <div className="p-8">Note not found or access denied.</div>;
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden border border-black-2">
-      {/* Main Content Area */}
       <FadeIn className="flex-1 flex flex-col h-full relative overflow-y-auto">
         <div className="max-w-3xl mx-auto w-full">
           
@@ -152,37 +148,53 @@ export function Editor({ noteId }: EditorProps) {
                 <span className="text-xs text-muted-foreground">
                     {isSaving ? "Saving..." : <span className="flex items-center gap-1"><Cloud className="h-3 w-3" /> <Check className="h-2 w-2" /> Saved</span>}
                 </span>
+                
+                {/* View Only Badge */}
+                {!canEdit && (
+                    <span className="flex items-center gap-1 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                        <Eye className="h-3 w-3" /> View Only
+                    </span>
+                )}
+
                 <div className="h-4 w-[1px] bg-border mx-1" />
                 <PresenceAvatars />
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowShareDialog(true)}
-                className={cn(
-                  "text-muted-foreground hover:text-foreground transition-colors gap-1",
-                  note.isShared && "text-blue-600 hover:text-blue-700 bg-blue-50"
-                )}
-              >
-                <Share2 className="h-4 w-4" />
-                {note.isShared && <span className="text-xs font-medium">Shared</span>}
-              </Button>
+              {/* Only Owner can share */}
+              {isOwner && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowShareDialog(true)}
+                    className={cn(
+                    "text-muted-foreground hover:text-foreground transition-colors gap-1",
+                    note.isShared && "text-blue-600 hover:text-blue-700 bg-blue-50"
+                    )}
+                >
+                    <Share2 className="h-4 w-4" />
+                    <span className="text-xs font-medium">Share</span>
+                </Button>
+              )}
 
               <div className="h-4 w-[1px] bg-border mx-1" />
-              <AIToolbar isOpen={isAIOpen} onAction={handleAIAction} />
+              
+              {canEdit && <AIToolbar isOpen={isAIOpen} onAction={handleAIAction} />}
+              
               <div className="h-4 w-[1px] bg-border mx-1" />
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setShowDeleteDialog(true)}
-                className="text-muted-foreground hover:text-destructive transition-colors"
-                disabled={isDeleting}
-              >
-                <Trash className="h-4 w-4" />
-              </Button>
+              
+              {isOwner && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    disabled={isDeleting}
+                >
+                    <Trash className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
 
@@ -192,10 +204,11 @@ export function Editor({ noteId }: EditorProps) {
             value={title}
             onChange={(e) => handleChange(e.target.value, content)}
             placeholder="Untitled Note"
-            className="w-full bg-transparent text-4xl font-bold tracking-tight border-none focus:outline-none placeholder:text-muted-foreground/40 mb-6"
+            disabled={!canEdit}
+            className="w-full bg-transparent text-4xl font-bold tracking-tight border-none focus:outline-none placeholder:text-muted-foreground/40 mb-6 disabled:opacity-80"
           />
 
-          {/* Main Editor Area with Overlay */}
+          {/* Main Editor Area */}
           <div className="relative min-h-[500px] flex flex-col">
             <CursorOverlay content={content} textareaRef={textareaRef} />
             
@@ -209,10 +222,12 @@ export function Editor({ noteId }: EditorProps) {
               onSelect={handleSelect}
               onClick={handleSelect}
               onKeyUp={handleSelect}
-              placeholder="Start writing..."
+              placeholder={canEdit ? "Start writing..." : "Read only mode"}
+              disabled={!canEdit}
               className={cn(
                 "w-full flex-1 resize-none bg-transparent text-lg leading-relaxed border-none focus:outline-none placeholder:text-muted-foreground/30",
-                "font-serif relative z-10"
+                "font-serif relative z-10",
+                !canEdit && "cursor-default"
               )}
               spellCheck={false}
             />
@@ -220,7 +235,7 @@ export function Editor({ noteId }: EditorProps) {
         </div>
       </FadeIn>
 
-      {/* AI Panel (Right Side) */}
+      {/* AI Panel */}
       {isAIOpen && (
         <AIPanel 
            isOpen={isAIOpen} 
@@ -231,25 +246,25 @@ export function Editor({ noteId }: EditorProps) {
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog 
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
         onConfirm={handleDelete}
         title="Delete Note"
-        description="Are you sure you want to delete this note? This action cannot be undone."
+        description="Are you sure you want to delete this note?"
         variant="destructive"
         actionLabel="Delete"
         isLoading={isDeleting}
       />
 
-      {/* Share Dialog */}
       <ShareDialog
+        noteId={noteId}
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
         isShared={!!note.isShared}
-        onToggleShare={handleToggleShare}
-        isLoading={isUpdating}
+        onTogglePublicShare={handleTogglePublicShare}
+        isUpdatingPublic={isUpdating}
+        currentUserEmail={session?.user?.email || ""}
       />
     </div>
   );

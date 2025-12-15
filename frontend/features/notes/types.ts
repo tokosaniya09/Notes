@@ -8,6 +8,26 @@ export interface Note {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  
+  // Extended properties from backend
+  permission?: 'OWNER' | 'EDIT' | 'VIEW';
+  owner?: {
+      firstName: string;
+      email: string;
+  }
+}
+
+export interface Collaborator {
+    id: string;
+    noteId: string;
+    userId: string;
+    permission: 'VIEW' | 'EDIT';
+    user: {
+        id: string;
+        email: string;
+        firstName: string;
+        avatar?: string;
+    }
 }
 
 export interface CreateNoteDto {

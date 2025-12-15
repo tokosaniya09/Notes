@@ -7,12 +7,14 @@ import { CollaborationGateway } from './collaboration.gateway';
 import { RedisModule } from '../../redis/redis.module';
 import { AuthModule } from '../auth/auth.module';
 import { NotesModule } from '../notes/notes.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     RedisModule,
     AuthModule,
     NotesModule,
+    UsersModule,
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

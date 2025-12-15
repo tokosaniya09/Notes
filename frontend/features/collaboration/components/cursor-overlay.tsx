@@ -13,7 +13,7 @@ interface CursorOverlayProps {
 }
 
 export function CursorOverlay({ content, textareaRef }: CursorOverlayProps) {
-  const { cursors } = useCollaborationStore();
+  const { cursors, selfId } = useCollaborationStore();
   const { data: currentUser } = useCurrentUser();
   const [coords, setCoords] = useState<Record<string, { x: number, y: number, height: number }>>({});
   
@@ -83,7 +83,7 @@ export function CursorOverlay({ content, textareaRef }: CursorOverlayProps) {
     const mirror = mirrorRef.current;
     
     // 1. Filter and sort cursors
-    const activeCursors = (Object.values(cursors) as RemoteCursor[]).filter(c => c.userId !== currentUser?.id);
+    const activeCursors = (Object.values(cursors) as RemoteCursor[]).filter(c => c.userId !== selfId);
     if (activeCursors.length === 0) {
       setCoords({});
       return;

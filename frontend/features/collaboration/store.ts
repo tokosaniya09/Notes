@@ -3,10 +3,12 @@ import { create } from 'zustand';
 import { PresenceUser, RemoteCursor } from './types';
 
 interface CollaborationState {
+  selfId?: string;
   isConnected: boolean;
   users: PresenceUser[];
   cursors: Record<string, RemoteCursor>;
   
+  setSelfId: (id: string) => void;
   setConnected: (status: boolean) => void;
   setUsers: (users: PresenceUser[]) => void;
   addUser: (user: PresenceUser) => void;
@@ -16,8 +18,11 @@ interface CollaborationState {
 }
 
 export const useCollaborationStore = create<CollaborationState>((set) => ({
+  selfId: undefined,
   isConnected: false,
   users: [],
+
+  setSelfId: (id) => set({ selfId: id }),
   cursors: {},
 
   setConnected: (isConnected) => set({ isConnected }),
