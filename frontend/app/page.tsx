@@ -16,7 +16,7 @@ export default async function Home() {
             <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
               N
             </div>
-            Notes SaaS
+            Notes
           </div>
           <nav className="flex gap-4 sm:gap-6 items-center">
             {session ? (

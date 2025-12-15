@@ -1,6 +1,6 @@
-# Notes SaaS Frontend
+# Notes Frontend
 
-A premium, fast, and scalable frontend architecture for the Notes SaaS application.
+A premium, fast, and scalable frontend architecture for the Notes application.
 
 ## 🏗 Tech Stack
 

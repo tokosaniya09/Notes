@@ -1,18 +1,20 @@
+
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useNote, useUpdateNote, useDeleteNote } from "../hooks";
 import { useEditorStore } from "../store";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
-import { Trash, ChevronLeft, Cloud, Check } from "lucide-react";
+import { Trash, ChevronLeft, Cloud, Check, Share2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/motion/fade-in";
 import { ConfirmDialog } from "../components/confirm-dialog";
+import { ShareDialog } from "../../collaboration/components/share-dialong";
 
 // Collaboration Imports
-import { useCollaboration, useCursorBroadcaster } from "@/features/collaboration/hooks";
+import { useCollaboration, useRealtimeBroadcaster } from "@/features/collaboration/hooks";
 import { PresenceAvatars } from "@/features/collaboration/components/presence-avatars";
 import { CursorOverlay } from "@/features/collaboration/components/cursor-overlay";
 
@@ -26,22 +28,20 @@ interface EditorProps {
 
 export function Editor({ noteId }: EditorProps) {
   const { data: note, isLoading } = useNote(noteId);
-  const { mutate: updateNote } = useUpdateNote(noteId);
+  const { mutate: updateNote, isPending: isUpdating } = useUpdateNote(noteId);
   const { mutate: deleteNote, isPending: isDeleting } = useDeleteNote();
   
   const { setSaving, isSaving, setLastSaved } = useEditorStore();
 
-  // Collaboration Hooks
-  useCollaboration(noteId);
-  const broadcastCursor = useCursorBroadcaster(noteId);
-
-  // Local state for immediate typing feedback
+  // Local State
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isRemoteUpdate, setIsRemoteUpdate] = useState(false);
+  
+  // Dialogs & UI State
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-  // AI State
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
   const [aiMode, setAIMode] = useState<AIMode>("idle");
 
@@ -49,7 +49,25 @@ export function Editor({ noteId }: EditorProps) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Initialize state when data loads
+  // --- Real-time Collaboration Logic ---
+  
+  // Handle incoming text from other users
+  const handleRemoteTextUpdate = useCallback((newContent: string) => {
+    // Prevent overwrite if we are actively typing? 
+    // For MVP, we allow last-write-wins but update state to show it.
+    // We set a flag to prevent echoing this update back to the server
+    setIsRemoteUpdate(true);
+    setContent(newContent);
+    setTimeout(() => setIsRemoteUpdate(false), 100);
+  }, []);
+
+  // Connect to socket
+  useCollaboration(noteId, handleRemoteTextUpdate);
+  
+  // Get broadcaster functions
+  const { broadcastCursor, broadcastText } = useRealtimeBroadcaster(noteId);
+
+  // Initialize state when data loads (REST API)
   useEffect(() => {
     if (note && !isInitialized) {
       setTitle(note.title);
@@ -58,12 +76,18 @@ export function Editor({ noteId }: EditorProps) {
     }
   }, [note, isInitialized]);
 
-  // Autosave Logic
+  // Handle Local Changes (Typing)
   const handleChange = (newTitle: string, newContent: string) => {
     setTitle(newTitle);
     setContent(newContent);
-    setSaving(true);
 
+    // 1. Broadcast to Socket (Real-time)
+    if (!isRemoteUpdate) {
+       broadcastText(newContent);
+    }
+    
+    // 2. Save to DB (Debounced)
+    setSaving(true);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -72,7 +96,7 @@ export function Editor({ noteId }: EditorProps) {
       updateNote(
         { 
           title: newTitle, 
-          content: { text: newContent } // Simple schema for MVP
+          content: { text: newContent } 
         },
         {
           onSuccess: () => {
@@ -81,7 +105,7 @@ export function Editor({ noteId }: EditorProps) {
           }
         }
       );
-    }, 5000); // 5 second debounce
+    }, 2000); // 2 second debounce
   };
 
   const handleSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
@@ -98,6 +122,10 @@ export function Editor({ noteId }: EditorProps) {
     deleteNote(noteId);
   };
 
+  const handleToggleShare = (shared: boolean) => {
+    updateNote({ isShared: shared });
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -106,16 +134,16 @@ export function Editor({ noteId }: EditorProps) {
     );
   }
 
-  if (!note) return <div>Note not found</div>;
+  if (!note) return <div>Note not found or access denied.</div>;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden border border-black-2">
       {/* Main Content Area */}
-      <FadeIn className="flex-1 flex flex-col h-full relative border border-black/10 rounded-lg shadow-sm bg-card">
-        <div className="w-full px-8 md:px-12 py-6 mx-auto">
+      <FadeIn className="flex-1 flex flex-col h-full relative overflow-y-auto">
+        <div className="max-w-3xl mx-auto w-full">
           
           {/* Header Actions */}
-          <div className="flex items-center justify-between mb-8 py-2">
+          <div className="flex items-center justify-between mb-8 border border-black-2">
             <div className="flex items-center gap-4">
               <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronLeft className="h-5 w-5" />
@@ -130,6 +158,20 @@ export function Editor({ noteId }: EditorProps) {
             </div>
 
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowShareDialog(true)}
+                className={cn(
+                  "text-muted-foreground hover:text-foreground transition-colors gap-1",
+                  note.isShared && "text-blue-600 hover:text-blue-700 bg-blue-50"
+                )}
+              >
+                <Share2 className="h-4 w-4" />
+                {note.isShared && <span className="text-xs font-medium">Shared</span>}
+              </Button>
+
+              <div className="h-4 w-[1px] bg-border mx-1" />
               <AIToolbar isOpen={isAIOpen} onAction={handleAIAction} />
               <div className="h-4 w-[1px] bg-border mx-1" />
               <Button 
@@ -199,6 +241,15 @@ export function Editor({ noteId }: EditorProps) {
         variant="destructive"
         actionLabel="Delete"
         isLoading={isDeleting}
+      />
+
+      {/* Share Dialog */}
+      <ShareDialog
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        isShared={!!note.isShared}
+        onToggleShare={handleToggleShare}
+        isLoading={isUpdating}
       />
     </div>
   );

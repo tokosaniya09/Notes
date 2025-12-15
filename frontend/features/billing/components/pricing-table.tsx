@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,31 +44,41 @@ export function PricingTable() {
   const router = useRouter();
   const { data: subscription, isLoading } = useSubscription();
   const { mutate: checkout, isPending } = useCheckout();
+  const [processingTier, setProcessingTier] = useState<SubscriptionTier | null>(null);
 
   const handleAction = (tier: SubscriptionTier) => {
     if (!session) {
-       router.push("/register?from=/pricing");
-       return;
-    }
-    
-    // Redirect to billing management if already on this plan or higher (simplified logic)
-    if (subscription?.subscription.tier === tier) {
-       router.push("/dashboard/billing");
-       return;
+      router.push("/register?from=/pricing");
+      return;
     }
 
-    checkout({
-      tier,
-      successUrl: `${window.location.origin}/dashboard/billing?success=true`,
-      cancelUrl: `${window.location.origin}/pricing?canceled=true`,
-    });
+    if (subscription?.subscription.tier === tier) {
+      router.push("/dashboard/billing");
+      return;
+    }
+
+    setProcessingTier(tier);
+
+    checkout(
+      {
+        tier,
+        successUrl: `${window.location.origin}/dashboard/billing?success=true`,
+        cancelUrl: `${window.location.origin}/pricing?canceled=true`,
+      },
+      {
+        onSettled: () => {
+          setProcessingTier(null);
+        },
+      }
+    );
   };
+
 
   return (
     <div className="grid gap-8 lg:grid-cols-3 lg:gap-8">
       {PLANS.map((plan) => {
         const isCurrent = subscription?.subscription.tier === plan.tier;
-        const isProcessing = isPending;
+        const isProcessing = processingTier === plan.tier;
 
         return (
           <Card 
@@ -107,19 +118,23 @@ export function PricingTable() {
               <Button 
                 className="w-full" 
                 variant={plan.recommended ? "default" : "outline"}
-                disabled={isCurrent || (plan.tier === 'FREE' && !!session) || isProcessing}
+                disabled={
+                  isCurrent ||
+                  (plan.tier === SubscriptionTier.FREE && !!session) ||
+                  isProcessing
+                }
                 onClick={() => handleAction(plan.tier)}
               >
                 {isProcessing ? (
-                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
                 ) : isCurrent ? (
-                   "Current Plan"
+                  "Current Plan"
                 ) : !session ? (
-                   "Get Started"
-                ) : plan.tier === 'FREE' ? (
-                   "Downgrade"
+                  "Get Started"
+                ) : plan.tier === SubscriptionTier.FREE ? (
+                  "Downgrade"
                 ) : (
-                   "Upgrade"
+                  "Upgrade"
                 )}
               </Button>
             </CardFooter>

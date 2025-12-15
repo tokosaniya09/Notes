@@ -20,9 +20,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             <div className="h-6 w-6 bg-primary rounded-md flex items-center justify-center text-primary-foreground text-xs">
               N
             </div>
-            Notes SaaS
+            Notes
           </div>
           <div className="flex items-center gap-4">
+             <span className="text-sm font-medium">{session.user?.name}</span>
              <UserNav email={session.user?.email} />
           </div>
         </div>

@@ -5,6 +5,7 @@ export class Note {
   content: any; // JSON
   isArchived: boolean;
   isDeleted: boolean;
+  isShared: boolean; // New field for collaboration
   userId: string;
   createdAt: Date;
   updatedAt: Date;

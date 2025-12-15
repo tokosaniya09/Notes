@@ -2,13 +2,16 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { socketService } from './socket';
 import { useCollaborationStore } from './store';
-import { COLLAB_EVENTS, CursorUpdatePayload, PresenceUser, RemoteCursor } from './types';
+import { COLLAB_EVENTS, CursorUpdatePayload, PresenceUser, RemoteCursor, TextUpdatePayload } from './types';
 import { useCurrentUser } from '@/features/user/hooks';
 
 // Throttle time for cursor updates (ms)
-const CURSOR_THROTTLE = 100;
+const CURSOR_THROTTLE = 50;
 
-export function useCollaboration(noteId: string) {
+export function useCollaboration(
+  noteId: string, 
+  onRemoteTextUpdate?: (content: string) => void
+) {
   const store = useCollaborationStore();
   const { data: user } = useCurrentUser();
 
@@ -19,15 +22,13 @@ export function useCollaboration(noteId: string) {
       try {
         const socket = await socketService.connect();
         
-        if (!mounted) return;
+        if (!mounted || !socket) return;
 
         store.setConnected(true);
 
-        // Event Listeners
+        // --- Event Listeners ---
+
         socket.on(COLLAB_EVENTS.PRESENCE_SYNC, (users: PresenceUser[]) => {
-          // Filter out self from list if needed, but showing self in list is okay too.
-          // Usually we want to filter self from "remote" lists but keep in "all users".
-          // For now, we store all.
           store.setUsers(users);
         });
 
@@ -41,6 +42,14 @@ export function useCollaboration(noteId: string) {
 
         socket.on(COLLAB_EVENTS.REMOTE_CURSOR, (cursor: RemoteCursor) => {
             store.updateCursor(cursor);
+        });
+
+        // Handle incoming text from other users
+        socket.on(COLLAB_EVENTS.REMOTE_TEXT_UPDATE, (payload: TextUpdatePayload) => {
+            // Only update if it comes from someone else (redundancy check)
+            if (user && payload.userId !== user.id && onRemoteTextUpdate) {
+                onRemoteTextUpdate(payload.content);
+            }
         });
 
         // Join Room
@@ -62,35 +71,45 @@ export function useCollaboration(noteId: string) {
         socket.off(COLLAB_EVENTS.USER_JOINED);
         socket.off(COLLAB_EVENTS.USER_LEFT);
         socket.off(COLLAB_EVENTS.REMOTE_CURSOR);
-        // We do not disconnect the socket entirely, just leave room, 
-        // to keep connection alive for navigation between notes.
+        socket.off(COLLAB_EVENTS.REMOTE_TEXT_UPDATE);
       }
       store.reset();
     };
-  }, [noteId]);
+  }, [noteId, user, onRemoteTextUpdate]);
 
   return {
-    users: store.users.filter(u => u.userId !== user?.id), // Exclude self from visual lists
+    users: store.users.filter(u => u.userId !== user?.id),
     isConnected: store.isConnected,
   };
 }
 
-export function useCursorBroadcaster(noteId: string) {
-  const lastEmitted = useRef<number>(0);
+// Hook to broadcast local changes
+export function useRealtimeBroadcaster(noteId: string) {
+  const lastCursorEmitted = useRef<number>(0);
 
   const broadcastCursor = useCallback((position: number) => {
     const now = Date.now();
-    if (now - lastEmitted.current > CURSOR_THROTTLE) {
+    if (now - lastCursorEmitted.current > CURSOR_THROTTLE) {
       const socket = socketService.getSocket();
       if (socket?.connected) {
         socket.emit(COLLAB_EVENTS.CLIENT_CURSOR, {
           noteId,
           cursorPosition: position,
         } as CursorUpdatePayload);
-        lastEmitted.current = now;
+        lastCursorEmitted.current = now;
       }
     }
   }, [noteId]);
 
-  return broadcastCursor;
+  const broadcastText = useCallback((content: string) => {
+    const socket = socketService.getSocket();
+    if (socket?.connected) {
+      socket.emit(COLLAB_EVENTS.CLIENT_TEXT_UPDATE, {
+        noteId,
+        content,
+      });
+    }
+  }, [noteId]);
+
+  return { broadcastCursor, broadcastText };
 }

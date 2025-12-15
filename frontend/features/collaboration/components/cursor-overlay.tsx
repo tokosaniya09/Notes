@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCollaborationStore } from "../store";
@@ -35,7 +36,7 @@ export function CursorOverlay({ content, textareaRef }: CursorOverlayProps) {
     return () => textarea.removeEventListener("scroll", handleScroll);
   }, [textareaRef]);
 
-  // Copy styles from textarea to mirror div
+  // Copy styles from textarea to mirror div to ensure identical layout
   const syncMirrorStyles = useCallback(() => {
     if (!textareaRef.current || !mirrorRef.current) return;
     
@@ -63,10 +64,15 @@ export function CursorOverlay({ content, textareaRef }: CursorOverlayProps) {
     mirror.style.top = '0';
     mirror.style.left = '0';
     mirror.style.visibility = 'hidden';
-    // Ensure we match default textarea wrapping if not explicitly set
-    if (!mirror.style.whiteSpace) mirror.style.whiteSpace = 'pre-wrap';
-    if (!mirror.style.overflowWrap) mirror.style.overflowWrap = 'break-word';
+    mirror.style.whiteSpace = 'pre-wrap';
+    mirror.style.overflowWrap = 'break-word';
   }, [textareaRef]);
+
+  // Trigger sync when window resizes
+  useEffect(() => {
+     window.addEventListener('resize', syncMirrorStyles);
+     return () => window.removeEventListener('resize', syncMirrorStyles);
+  }, [syncMirrorStyles]);
 
   // Calculate coordinates efficiently
   useEffect(() => {
@@ -93,7 +99,7 @@ export function CursorOverlay({ content, textareaRef }: CursorOverlayProps) {
     activeCursors.forEach(cursor => {
       const pos = Math.min(cursor.cursorPosition, content.length);
       // Escape HTML in content to prevent XSS in mirror
-      const textChunk = content.substring(lastPos, pos).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const textChunk = content.substring(lastPos, pos).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>');
       html += textChunk;
       // Add marker span
       html += `<span data-userid="${cursor.userId}">|</span>`;
@@ -101,7 +107,9 @@ export function CursorOverlay({ content, textareaRef }: CursorOverlayProps) {
     });
 
     // Append remaining text
-    html += content.substring(lastPos).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    html += content.substring(lastPos).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>');
+    // Ensure mirror has exact same text ending behavior
+    if (content.endsWith('\n')) html += '<br/>'; 
     
     // Update DOM once
     mirror.innerHTML = html;
@@ -118,7 +126,7 @@ export function CursorOverlay({ content, textareaRef }: CursorOverlayProps) {
         newCoords[cursor.userId] = {
           x: span.offsetLeft + borderLeft,
           y: span.offsetTop + borderTop,
-          height: span.offsetHeight
+          height: span.offsetHeight || parseFloat(textareaStyle.lineHeight)
         };
       }
     });
@@ -151,17 +159,14 @@ export function CursorOverlay({ content, textareaRef }: CursorOverlayProps) {
                 }}
                 exit={{ opacity: 0 }}
                 transition={{ 
-                  // Smooth spring animation for cursor movement
-                  type: "spring", 
-                  damping: 25, 
-                  stiffness: 300,
-                  mass: 0.5
+                  type: "tween",
+                  duration: 0.1
                 }}
                 className="absolute top-0 left-0 z-20 flex flex-col items-start"
               >
                 {/* Cursor Bar */}
                 <div 
-                  className="w-[2px] rounded-full shadow-sm" 
+                  className="w-[2px] shadow-sm animate-pulse" 
                   style={{ 
                     backgroundColor: cursor.color,
                     height: pos.height || 24 
@@ -170,7 +175,7 @@ export function CursorOverlay({ content, textareaRef }: CursorOverlayProps) {
                 
                 {/* Name Tag */}
                 <div 
-                  className="ml-1 mt-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-white shadow-md whitespace-nowrap opacity-50 transition-opacity hover:opacity-100"
+                  className="ml-1 mt-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-white shadow-md whitespace-nowrap opacity-100 transition-opacity"
                   style={{ backgroundColor: cursor.color }}
                 >
                   {cursor.userName}

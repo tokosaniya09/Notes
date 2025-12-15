@@ -1,4 +1,4 @@
-# Notes SaaS (Enterprise Edition)
+# Notes (Enterprise Edition)
 
 A production-grade, multi-tenant SaaS application designed for high performance, scalability, and a premium user experience.
 

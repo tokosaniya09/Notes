@@ -36,7 +36,7 @@ test.describe('Critical Path', () => {
     await expect(page.getByText('Saved')).toBeVisible({ timeout: 10000 });
 
     // 6. Navigate Back to Dashboard
-    await page.getByRole('link', { name: 'Notes SaaS' }).click(); // Or back button icon if available
+    await page.getByRole('link', { name: 'Notes' }).click(); // Or back button icon if available
 
     // 7. Verify Note in List
     await expect(page.getByText('My E2E Note')).toBeVisible();

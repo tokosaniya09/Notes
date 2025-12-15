@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
 import { LogOut, Settings, User } from "lucide-react";
+import Link from "next/link";
 
 // 10 Distinct Notion-style Avatars
 const AVATARS = [
@@ -25,6 +26,7 @@ const AVATARS = [
   "https://api.dicebear.com/7.x/thumbs/svg?seed=monkey&backgroundColor=000000&shapeColor=ffffff",
   "https://api.dicebear.com/7.x/thumbs/svg?seed=penguin&backgroundColor=000000&shapeColor=ffffff"
 ];
+
 
 interface UserNavProps {
   email: string | null | undefined;
@@ -65,16 +67,23 @@ export function UserNav({ email }: UserNavProps) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <User className="mr-2 h-4 w-4" />
-          <span>Profile</span>
+        
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/settings" className="w-full cursor-pointer flex items-center">
+            <User className="mr-2 h-4 w-4" />
+            <span>Profile</span>
+          </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
+        
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/settings" className="w-full cursor-pointer flex items-center">
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </Link>
         </DropdownMenuItem>
+        
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => signOut({ callbackUrl: "/" })}>
+        <DropdownMenuItem className="text-red-600 focus:text-red-600 cursor-pointer" onClick={() => signOut({ callbackUrl: "/" })}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

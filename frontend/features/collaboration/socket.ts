@@ -40,13 +40,13 @@ class SocketService {
         this.socket.disconnect();
     }
 
+    // CRITICAL: Pass token in query param because standard WebSocket headers are often restricted
     this.socket = io(`${backendUrl}/collaboration`, {
       auth: {
         token: `Bearer ${token}`
       },
-      // Backend checks handshake.headers.authorization
-      extraHeaders: {
-        Authorization: `Bearer ${token}`
+      query: {
+        token: `Bearer ${token}`
       },
       transports: ['websocket'],
       autoConnect: true,

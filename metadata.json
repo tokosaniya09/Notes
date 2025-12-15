@@ -1,5 +1,5 @@
 {
-  "name": "Notes SaaS Backend",
-  "description": "Production-grade NestJS backend skeleton for a multi-tenant Notes SaaS application, featuring centralized configuration, structured logging, and database/caching layers.",
+  "name": "Notes Backend",
+  "description": "Production-grade NestJS backend skeleton for a multi-tenant Notes application, featuring centralized configuration, structured logging, and database/caching layers.",
   "requestFramePermissions": []
 }

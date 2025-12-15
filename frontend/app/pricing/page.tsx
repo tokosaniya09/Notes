@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Pricing - Notes SaaS",
+  title: "Pricing - Notes",
   description: "Simple, transparent pricing for everyone.",
 };
 

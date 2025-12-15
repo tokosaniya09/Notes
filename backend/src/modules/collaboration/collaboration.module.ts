@@ -6,11 +6,13 @@ import { CollaborationService } from './collaboration.service';
 import { CollaborationGateway } from './collaboration.gateway';
 import { RedisModule } from '../../redis/redis.module';
 import { AuthModule } from '../auth/auth.module';
+import { NotesModule } from '../notes/notes.module';
 
 @Module({
   imports: [
     RedisModule,
     AuthModule,
+    NotesModule,
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

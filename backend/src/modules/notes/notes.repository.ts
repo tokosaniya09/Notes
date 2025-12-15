@@ -10,6 +10,7 @@ export class NotesRepository {
     const note = await (this.prisma as any).note.create({
       data: {
         ...data,
+        isShared: false,
         user: { connect: { id: userId } },
       },
     });
@@ -29,7 +30,7 @@ export class NotesRepository {
       where: {
         ...params.where,
         userId,
-        isDeleted: false, // Default to not showing deleted
+        isDeleted: false,
       },
       skip: params.skip,
       take: params.take,
@@ -42,24 +43,23 @@ export class NotesRepository {
     const note = await (this.prisma as any).note.findFirst({
       where: {
         id,
-        userId,
         isDeleted: false,
+        OR: [
+          { userId },
+          { isShared: true } // Allow access if note is shared
+        ]
       },
     });
     return note ? new Note(note) : null;
   }
 
   async update(userId: string, id: string, data: any): Promise<Note> {
-    // We implicitly verify ownership by adding userId to the where clause
-    // However, Prisma update many/first syntax is different.
-    // For safety, we rely on the service to check existence or use updateMany for bulk safety,
-    // but update is standard for ID based. 
-    // Best practice: Check existence first or handle error, but to keep it atomic:
-    // We simply try to update where ID and UserID match.
-    
-    // Since Prisma `update` requires a unique selector (id), we can't add userId there directly
-    // unless we use a composite ID or `updateMany`.
-    // Strategy: We use `findFirst` in Service to ensure ownership, then `update` here.
+    // We assume permission check (findOne) is done by Service before calling update,
+    // or we implicitly trust the operation if the ID matches.
+    // However, for extra safety in a direct call, we should ensure the note exists and is accessible.
+    // But since `update` throws if not found in Prisma when using `update` with `where: id`, 
+    // it will just work if the ID is valid. 
+    // The Service layer handles the logic of "Can this user edit this note?".
     
     const note = await (this.prisma as any).note.update({
       where: { id },
@@ -69,6 +69,15 @@ export class NotesRepository {
   }
 
   async softDelete(userId: string, id: string): Promise<Note> {
+    // Only owner should delete. We enforce userId here.
+    const note = await (this.prisma as any).note.findFirst({
+        where: { id, userId }
+    });
+    
+    if (!note) {
+        throw new Error("Note not found or unauthorized");
+    }
+
     return (this.prisma as any).note.update({
       where: { id },
       data: { isDeleted: true },

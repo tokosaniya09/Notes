@@ -1,3 +1,4 @@
+
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -16,6 +17,7 @@ import { COLLAB_EVENTS } from './events/collaboration.events';
 import { JoinNoteDto } from './dto/join-note.dto';
 import { CursorUpdateDto } from './dto/cursor-update.dto';
 import { PresenceDto } from './dto/presence.dto';
+import { NotesService } from '../notes/notes.service';
 
 // Extend Socket to include authenticated user using intersection type
 type AuthenticatedSocket = Socket & {
@@ -28,7 +30,7 @@ type AuthenticatedSocket = Socket & {
 
 @WebSocketGateway({
   cors: {
-    origin: '*', // Restrict in production
+    origin: '*', 
   },
   namespace: 'collaboration',
 })
@@ -41,13 +43,13 @@ export class CollaborationGateway
   private readonly logger = new Logger(CollaborationGateway.name);
 
   // Track which room a socket is in to handle disconnects efficiently
-  // Map<SocketID, NoteID>
   private socketRoomMap = new Map<string, string>();
 
   constructor(
     private readonly collaborationService: CollaborationService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly notesService: NotesService,
   ) {
     // Subscribe to Redis events from the service and broadcast to local clients
     this.collaborationService.messages$.subscribe((msg) => {
@@ -59,8 +61,6 @@ export class CollaborationGateway
           this.server.to(msg.noteId).emit(COLLAB_EVENTS.USER_LEFT, msg.payload);
           break;
         case 'CURSOR_UPDATE':
-          // Exclude the sender if possible, but broadcast is simpler. 
-          // Frontend should filter out its own updates based on User ID.
           this.server.to(msg.noteId).emit(COLLAB_EVENTS.REMOTE_CURSOR, msg.payload);
           break;
       }
@@ -70,21 +70,24 @@ export class CollaborationGateway
   async handleConnection(client: AuthenticatedSocket) {
     try {
       const token = this.extractToken(client);
-      if (!token) throw new UnauthorizedException('No token provided');
+      if (!token) {
+         this.logger.warn(`Client ${client.id} has no token, disconnecting.`);
+         client.disconnect();
+         return;
+      }
 
       const secret = this.configService.get<string>('JWT_SECRET');
       const payload = this.jwtService.verify(token, { secret });
       
-      // Attach user to socket
       client.user = {
         id: payload.sub,
         email: payload.email,
-        firstName: payload.firstName || 'User', // Fallback
+        firstName: payload.firstName || 'User',
       };
       
-      this.logger.log(`Client connected: ${client.user.id}`);
+      this.logger.log(`Client connected: ${client.user.id} (${client.id})`);
     } catch (e) {
-      this.logger.warn(`Connection rejected: ${e.message}`);
+      this.logger.warn(`Connection rejected for ${client.id}: ${e.message}`);
       client.disconnect();
     }
   }
@@ -104,16 +107,21 @@ export class CollaborationGateway
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() dto: JoinNoteDto,
   ) {
-    if (!client.user) return; // Should be handled by connection guard logic
+    if (!client.user) return; 
 
     const { noteId } = dto;
     
-    // 1. Join Socket.IO Room (Local instance awareness)
+    // VERIFY ACCESS
+    try {
+        await this.notesService.findOne(client.user.id, noteId);
+    } catch (e) {
+        client.emit('error', { message: 'Access denied to this note' });
+        return;
+    }
+
     await client.join(noteId);
     this.socketRoomMap.set(client.id, noteId);
 
-    // 2. Create Presence Object
-    // Generate a consistent color based on user ID or random
     const color = '#' + Math.floor(Math.random()*16777215).toString(16); 
     const presence: PresenceDto = {
       userId: client.user.id,
@@ -122,10 +130,7 @@ export class CollaborationGateway
       connectedAt: new Date().toISOString(),
     };
 
-    // 3. Register with Redis (Global awareness)
     const currentUsers = await this.collaborationService.addClientToNote(noteId, presence);
-
-    // 4. Send initial state to the joining client
     client.emit(COLLAB_EVENTS.PRESENCE_SYNC, currentUsers);
   }
 
@@ -148,24 +153,44 @@ export class CollaborationGateway
   ) {
     if (!client.user) return;
 
-    // Sanitize/Enforce User ID on the payload
     const safePayload: CursorUpdateDto = {
         ...dto,
-        userName: client.user.firstName, // Trust token over payload
+        userName: client.user.firstName, 
     };
 
-    // Send to Redis so other instances get it
     await this.collaborationService.broadcastCursor(safePayload);
   }
 
+  // NEW: Handle Text Synchronization
+  @SubscribeMessage(COLLAB_EVENTS.CLIENT_TEXT_UPDATE)
+  async handleTextUpdate(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { noteId: string; content: string },
+  ) {
+    if (!client.user) return;
+
+    // Broadcast to everyone else in the room
+    client.to(payload.noteId).emit(COLLAB_EVENTS.REMOTE_TEXT_UPDATE, {
+      userId: client.user.id,
+      content: payload.content,
+      timestamp: Date.now(),
+    });
+  }
+
   private extractToken(client: Socket): string | undefined {
+    // Check auth object first (standard socket.io v4)
+    if (client.handshake.auth && client.handshake.auth.token) {
+        return client.handshake.auth.token.replace('Bearer ', '');
+    }
+    // Check query params
+    const queryToken = client.handshake.query.token;
+    if (typeof queryToken === 'string') {
+        return queryToken.replace('Bearer ', '');
+    }
+    // Check headers
     const authHeader = client.handshake.headers.authorization;
     if (authHeader && authHeader.split(' ')[0] === 'Bearer') {
       return authHeader.split(' ')[1];
-    }
-    const queryToken = client.handshake.query.token;
-    if (typeof queryToken === 'string') {
-        return queryToken;
     }
     return undefined;
   }

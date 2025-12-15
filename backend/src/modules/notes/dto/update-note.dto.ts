@@ -14,4 +14,8 @@ export class UpdateNoteDto {
   @IsOptional()
   @IsBoolean()
   isArchived?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isShared?: boolean;
 }

@@ -1,4 +1,4 @@
-# Notes SaaS Backend
+# Notes Backend
 
 This repository contains the backend infrastructure for a production-grade, multi-tenant SaaS application.
 
