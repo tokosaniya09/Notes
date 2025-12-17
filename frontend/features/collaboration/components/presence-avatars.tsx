@@ -1,7 +1,6 @@
 "use client";
 
 import { useCollaborationStore } from "../store";
-import { useCurrentUser } from "@/features/user/hooks";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -11,7 +10,6 @@ const getAvatarUrl = (seed: string) => `https://api.dicebear.com/7.x/notionists/
 
 export function PresenceAvatars() {
   const { users, cursors, selfId } = useCollaborationStore();
-  const { data: currentUser } = useCurrentUser();
   const [now, setNow] = useState(Date.now());
 
   // Update time every second to expire "typing" status visual

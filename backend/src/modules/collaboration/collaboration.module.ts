@@ -8,6 +8,7 @@ import { RedisModule } from '../../redis/redis.module';
 import { AuthModule } from '../auth/auth.module';
 import { NotesModule } from '../notes/notes.module';
 import { UsersModule } from '../users/users.module';
+import { WsJwtGuard } from '../auth/guards/ws-jwt-guard';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { UsersModule } from '../users/users.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [CollaborationGateway, CollaborationService],
+  providers: [CollaborationGateway, CollaborationService, WsJwtGuard],
   exports: [CollaborationService],
 })
 export class CollaborationModule {}

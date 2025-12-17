@@ -134,12 +134,12 @@ export function Editor({ noteId }: EditorProps) {
   if (!note) return <div className="p-8">Note not found or access denied.</div>;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden border border-black-2">
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden border rounded-lg">
       <FadeIn className="flex-1 flex flex-col h-full relative overflow-y-auto">
         <div className="max-w-3xl mx-auto w-full">
           
           {/* Header Actions */}
-          <div className="flex items-center justify-between mb-8 border border-black-2">
+          <div className="flex items-center justify-between mb-8 border-b py-4  sm:px-0">
             <div className="flex items-center gap-4">
               <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronLeft className="h-5 w-5" />

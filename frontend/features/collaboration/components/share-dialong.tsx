@@ -84,7 +84,7 @@ export function ShareDialog({
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
       <div 
-        className="relative w-[40%] z-50 grid mx-4 gap-4 border bg-card p-6 shadow-lg sm:rounded-lg animate-in zoom-in-95 fade-in duration-200"
+        className="relative  z-50 grid mx-4 gap-4 border bg-card p-6 shadow-lg sm:rounded-lg animate-in zoom-in-95 fade-in duration-200"
       >
         <h3 className="text-lg font-semibold leading-none tracking-tight">
             Share Note
@@ -92,38 +92,64 @@ export function ShareDialog({
 
         {/* 1. Public Link Section */}
         <div className="border rounded-md p-4 space-y-3 bg-muted/20">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    {isShared ? <Globe className="h-4 w-4 text-blue-500" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
-                    <div>
-                        <p className="text-sm font-medium">Public Access</p>
-                        <p className="text-xs text-muted-foreground">
-                            {isShared ? "Anyone with link can view." : "Only invited people can access."}
-                        </p>
-                    </div>
-                </div>
-                <Button 
-                    variant={isShared ? "outline" : "default"} 
-                    size="sm"
-                    onClick={() => onTogglePublicShare(!isShared)}
-                    disabled={isUpdatingPublic}
-                >
-                    {isUpdatingPublic && <Icons.spinner className="mr-2 h-3 w-3 animate-spin" />}
-                    {isShared ? "Disable Link" : "Enable Link"}
-                </Button>
+          {/* TOP ROW */}
+          <div className="flex items-center justify-between gap-3">
+            {/* LEFT CONTENT */}
+            <div className="flex items-start gap-2 min-w-0">
+              {isShared ? (
+                <Globe className="h-5 w-5 text-blue-500 shrink-0" />
+              ) : (
+                <Lock className="h-5 w-5 text-muted-foreground shrink-0" />
+              )}
+
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Public Access</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {isShared
+                    ? "Anyone with link can view."
+                    : "Only invited people can access."}
+                </p>
+              </div>
             </div>
-            
-            {isShared && (
-               <div className="flex items-center space-x-2">
-                 <div className="flex-1 h-8 rounded-md border bg-background px-3 py-1.5 text-xs text-muted-foreground truncate select-all">
-                    {window.location.href}
-                 </div>
-                 <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCopy}>
-                    {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
-                 </Button>
-               </div>
-            )}
+
+            {/* BUTTON */}
+            <Button
+              variant={isShared ? "outline" : "default"}
+              size="sm"
+              onClick={() => onTogglePublicShare(!isShared)}
+              disabled={isUpdatingPublic}
+              className="shrink-0"
+            >
+              {isUpdatingPublic && (
+                <Icons.spinner className="mr-2 h-3 w-3 animate-spin" />
+              )}
+              {isShared ? "Disable Link" : "Enable Link"}
+            </Button>
+          </div>
+
+          {/* SHARE LINK */}
+          {isShared && (
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex-1 h-8 rounded-md border bg-background px-3 py-1.5 text-xs text-muted-foreground overflow-x-auto overflow-y-hidden whitespace-nowrap w-[10px]">
+                {window.location.href}
+              </div>
+
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 shrink-0"
+                onClick={handleCopy}
+              >
+                {copied ? (
+                  <Check className="h-3 w-3 text-green-500" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
+              </Button>
+            </div>
+          )}
         </div>
+
 
         <div className="border-t my-1" />
 
@@ -148,7 +174,7 @@ export function ShareDialog({
                     <div className="flex justify-center p-4"><Icons.spinner className="h-4 w-4 animate-spin text-muted-foreground" /></div>
                 ) : collaborators && collaborators.length > 0 ? (
                     collaborators.map((c) => (
-                        <div key={c.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 group">
+                        <div key={c.userId} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 group">
                             <div className="flex items-center gap-2">
                                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                                     {c.user.firstName[0]}
@@ -165,7 +191,7 @@ export function ShareDialog({
                                 <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive transition-opacity"
                                     onClick={() => revokeUser(c.userId)}
                                     disabled={isRevoking}
                                 >

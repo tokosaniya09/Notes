@@ -20,6 +20,7 @@ import { PresenceDto } from './dto/presence.dto';
 import { NotesService } from '../notes/notes.service';
 import { UsersService } from '../users/users.service';
 import { RemoteCursorPayload } from './dto/remote-cursor-payload.dto';
+import { WsJwtGuard } from '../auth/guards/ws-jwt-guard';
 
 // Extend Socket to include authenticated user using intersection type
 type AuthenticatedSocket = Socket & {
@@ -30,6 +31,7 @@ type AuthenticatedSocket = Socket & {
   };
 };
 
+@UseGuards(WsJwtGuard)
 @WebSocketGateway({
   cors: {
     origin: '*', 
@@ -114,7 +116,10 @@ export class CollaborationGateway
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() dto: JoinNoteDto,
   ) {
-    if (!client.user) return; 
+    if (!client.user) {
+      client.emit('error', { message: 'Authentication required' });
+      return;
+    }
 
     const { noteId } = dto;
     

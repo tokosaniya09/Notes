@@ -13,7 +13,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   }
 
   return (
-    <div className="flex min-h-screen flex-col space-y-6">
+    <div className="flex min-h-screen flex-col space-y-6 pb-8">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between py-4">
           <div className="flex items-center gap-2 font-bold text-lg">
@@ -28,7 +28,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           </div>
         </div>
       </header>
-      <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr] ">
+      <div className="container grid flex-1 gap-2 md:grid-cols-[200px_1fr] ">
         <aside className="hidden w-[200px] flex-col md:flex border-r border-black-2 p-4">
           <nav className="grid items-start gap-2">
             <Link 
